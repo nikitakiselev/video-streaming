@@ -46,9 +46,10 @@ def update_status(**kwargs):
     save_status()
 
 def get_video_files(directory):
-    """Получить список видеофайлов в директории"""
+    """Получить список видеофайлов в директории (учитывая symlink-и)"""
     video_files = []
-    for root, dirs, files in os.walk(directory):
+    # followlinks=True — обходим вложенные каталоги, даже если это symlink-и
+    for root, dirs, files in os.walk(directory, followlinks=True):
         for file in files:
             if Path(file).suffix.lower() in VIDEO_EXTENSIONS:
                 video_files.append(os.path.join(root, file))
