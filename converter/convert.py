@@ -123,12 +123,6 @@ def convert_video(input_path, output_path):
     except:
         pass
     
-    # QSV на i3-8100 может не поддерживать 4K (2160p) кодирование
-    # Используем программный кодек для разрешений выше 1920x1080
-    if use_qsv and video_height and video_height > 1080:
-        print(f"  Разрешение {video_width}x{video_height} - QSV может не поддерживать, используем программный кодек", flush=True)
-        use_qsv = False
-    
     # Проверяем доступность Quick Sync с подробным выводом
     use_qsv = False
     print("=== Проверка Intel Quick Sync ===", flush=True)
@@ -167,6 +161,12 @@ def convert_video(input_path, output_path):
             print(f"✗ Ошибка проверки ffmpeg: {e}", flush=True)
     else:
         print("✗ Устройство GPU недоступно, пропускаем проверку кодека", flush=True)
+    
+    # QSV на i3-8100 может не поддерживать 4K (2160p) кодирование
+    # Используем программный кодек для разрешений выше 1920x1080
+    if use_qsv and video_height and video_height > 1080:
+        print(f"  Разрешение {video_width}x{video_height} - QSV может не поддерживать 4K, используем программный кодек", flush=True)
+        use_qsv = False
     
     # QSV на i3-8100 может не поддерживать 4K (2160p) кодирование
     # Используем программный кодек для разрешений выше 1920x1080
