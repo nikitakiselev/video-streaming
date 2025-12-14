@@ -113,8 +113,45 @@ def convert_video(input_path, output_path):
         pass
     
     # Параметры конвертации с использованием Intel Quick Sync (QSV)
-    # Проверяем доступность Quick Sync
-    use_qsv = os.path.exists('/dev/dri/renderD128')
+    # Проверяем доступность Quick Sync несколькими способами
+    use_qsv = False
+    qsv_info = []
+    
+    # Проверка 1: наличие устройства
+    if os.path.exists('/dev/dri/renderD128'):
+        qsv_info.append("Устройство /dev/dri/renderD128 найдено")
+        use_qsv = True
+    else:
+        qsv_info.append("Устройство /dev/dri/renderD128 не найдено")
+        # Проверяем другие возможные устройства
+        if os.path.exists('/dev/dri'):
+            dri_devices = [f for f in os.listdir('/dev/dri') if f.startswith('renderD')]
+            if dri_devices:
+                qsv_info.append(f"Найдены устройства: {', '.join(dri_devices)}")
+                use_qsv = True
+            else:
+                qsv_info.append("В /dev/dri нет устройств renderD*")
+    
+    # Проверка 2: поддержка QSV в ffmpeg
+    if use_qsv:
+        try:
+            check_cmd = ['ffmpeg', '-hide_banner', '-encoders']
+            result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=5)
+            if 'h264_qsv' in result.stdout:
+                qsv_info.append("Кодек h264_qsv доступен в ffmpeg")
+            else:
+                qsv_info.append("Кодек h264_qsv НЕ найден в ffmpeg - используем программный кодек")
+                use_qsv = False
+        except Exception as e:
+            qsv_info.append(f"Ошибка проверки ffmpeg: {e}")
+            use_qsv = False
+    
+    # Выводим информацию о Quick Sync
+    print("=== Проверка Quick Sync ===", flush=True)
+    for info in qsv_info:
+        print(f"  {info}", flush=True)
+    print(f"Использование Quick Sync: {'ДА' if use_qsv else 'НЕТ'}", flush=True)
+    print("==========================", flush=True)
     
     if use_qsv:
         # Используем аппаратное ускорение Quick Sync
@@ -138,7 +175,7 @@ def convert_video(input_path, output_path):
             '-loglevel', 'error',         # Минимальный вывод логов
             output_path
         ]
-        print("Используется Intel Quick Sync (QSV)", flush=True)
+        print(">>> ИСПОЛЬЗУЕТСЯ Intel Quick Sync (QSV) <<<", flush=True)
     else:
         # Fallback на программный кодек
         cmd = [
@@ -158,16 +195,18 @@ def convert_video(input_path, output_path):
             '-loglevel', 'error',         # Минимальный вывод логов
             output_path
         ]
-        print("Используется программный кодек (Quick Sync недоступен)", flush=True)
+        print(">>> ИСПОЛЬЗУЕТСЯ программный кодек libx264 (Quick Sync недоступен) <<<", flush=True)
     
     try:
+        # Для QSV нужно перенаправить stderr, чтобы видеть ошибки
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
                                   text=True, bufsize=1)
         
         update_status(status="converting")
         
-        # Читаем прогресс из stdout
+        # Читаем прогресс из stdout и логируем скорость
         out_time = 0
+        last_speed_log = time.time()
         for line in process.stdout:
             line = line.strip()
             if not line or '=' not in line:
@@ -184,6 +223,10 @@ def convert_video(input_path, output_path):
                     speed_str = line.split('=', 1)[1].replace('x', '').strip()
                     speed = float(speed_str)
                     update_status(speed=speed)
+                    # Логируем скорость каждые 5 секунд
+                    if time.time() - last_speed_log > 5:
+                        print(f"Скорость конвертации: {speed:.2f}x", flush=True)
+                        last_speed_log = time.time()
                     if duration and speed > 0 and out_time > 0:
                         remaining = max(0, (duration - out_time) / speed)
                         update_status(eta=int(remaining))
@@ -192,6 +235,15 @@ def convert_video(input_path, output_path):
                 pass
         
         process.wait()
+        
+        # Читаем stderr для диагностики
+        stderr_output = process.stderr.read() if process.stderr else ""
+        if stderr_output:
+            # Ищем информацию о QSV или ошибки
+            if 'qsv' in stderr_output.lower():
+                print(f"FFmpeg сообщения о QSV: {stderr_output[:1000]}", flush=True)
+            elif 'error' in stderr_output.lower() or process.returncode != 0:
+                print(f"FFmpeg ошибки: {stderr_output[:1000]}", flush=True)
         
         if process.returncode == 0:
             print(f"Успешно: {output_path}", flush=True)
@@ -255,12 +307,57 @@ def scan_and_convert():
         else:
             print(f"Пропуск (уже обработан): {input_path}", flush=True)
 
+def check_qsv_availability():
+    """Проверка доступности Quick Sync при запуске"""
+    print("\n=== Проверка Intel Quick Sync ===", flush=True)
+    
+    # Проверка устройств
+    if os.path.exists('/dev/dri/renderD128'):
+        print("✓ Устройство /dev/dri/renderD128 найдено", flush=True)
+        device_ok = True
+    else:
+        print("✗ Устройство /dev/dri/renderD128 не найдено", flush=True)
+        device_ok = False
+        if os.path.exists('/dev/dri'):
+            dri_devices = [f for f in os.listdir('/dev/dri') if f.startswith('renderD')]
+            if dri_devices:
+                print(f"  Найдены другие устройства: {', '.join(dri_devices)}", flush=True)
+                device_ok = True
+            else:
+                print("  В /dev/dri нет устройств renderD*", flush=True)
+        else:
+            print("  Директория /dev/dri не существует", flush=True)
+    
+    # Проверка поддержки в ffmpeg
+    qsv_available = False
+    try:
+        check_cmd = ['ffmpeg', '-hide_banner', '-encoders']
+        result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=5)
+        if 'h264_qsv' in result.stdout:
+            print("✓ Кодек h264_qsv доступен в ffmpeg", flush=True)
+            qsv_available = True
+        else:
+            print("✗ Кодек h264_qsv НЕ найден в ffmpeg", flush=True)
+    except Exception as e:
+        print(f"✗ Ошибка проверки ffmpeg: {e}", flush=True)
+    
+    if qsv_available and device_ok:
+        print(">>> Quick Sync будет использоваться для конвертации <<<", flush=True)
+    else:
+        print(">>> Quick Sync НЕ будет использоваться, будет использован программный кодек <<<", flush=True)
+    
+    print("===================================\n", flush=True)
+    return qsv_available and device_ok
+
 def main():
     """Главная функция"""
     print("Сервис конвертации видео запущен", flush=True)
     print(f"Входная директория: {INPUT_DIR}", flush=True)
     print(f"Выходная директория: {OUTPUT_DIR}", flush=True)
     print(f"Интервал сканирования: {SCAN_INTERVAL} секунд", flush=True)
+    
+    # Проверяем Quick Sync при запуске
+    check_qsv_availability()
     
     # Инициализируем статус
     update_status(
