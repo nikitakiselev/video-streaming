@@ -102,17 +102,32 @@ def convert_video(input_path, output_path):
         status="starting"
     )
     
-    # Получаем длительность видео для расчета прогресса
+    # Получаем длительность и разрешение видео для расчета прогресса и проверки поддержки QSV
     duration = None
+    video_width = None
+    video_height = None
     try:
         probe_cmd = [
-            'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+            'ffprobe', '-v', 'error', '-show_entries', 'format=duration:stream=width,height',
             '-of', 'default=noprint_wrappers=1:nokey=1', input_path
         ]
         result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
-        duration = float(result.stdout.strip())
+        lines = result.stdout.strip().split('\n')
+        for line in lines:
+            if 'duration=' in line:
+                duration = float(line.split('=')[1])
+            elif 'width=' in line:
+                video_width = int(line.split('=')[1])
+            elif 'height=' in line:
+                video_height = int(line.split('=')[1])
     except:
         pass
+    
+    # QSV на i3-8100 может не поддерживать 4K (2160p) кодирование
+    # Используем программный кодек для разрешений выше 1920x1080
+    if use_qsv and video_height and video_height > 1080:
+        print(f"  Разрешение {video_width}x{video_height} - QSV может не поддерживать, используем программный кодек", flush=True)
+        use_qsv = False
     
     # Проверяем доступность Quick Sync с подробным выводом
     use_qsv = False
