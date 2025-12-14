@@ -108,18 +108,23 @@ def convert_video(input_path, output_path):
     video_height = None
     try:
         probe_cmd = [
-            'ffprobe', '-v', 'error', '-show_entries', 'format=duration:stream=width,height',
+            'ffprobe', '-v', 'error', 
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,height:format=duration',
             '-of', 'default=noprint_wrappers=1:nokey=1', input_path
         ]
         result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
         lines = result.stdout.strip().split('\n')
-        for line in lines:
-            if 'duration=' in line:
-                duration = float(line.split('=')[1])
-            elif 'width=' in line:
-                video_width = int(line.split('=')[1])
-            elif 'height=' in line:
-                video_height = int(line.split('=')[1])
+        # ffprobe возвращает значения в порядке: width, height, duration (без префиксов)
+        values = [line.strip() for line in lines if line.strip()]
+        if len(values) >= 2:
+            try:
+                video_width = int(values[0])
+                video_height = int(values[1])
+                if len(values) >= 3:
+                    duration = float(values[2])
+            except (ValueError, IndexError):
+                pass
     except:
         pass
     
@@ -161,12 +166,6 @@ def convert_video(input_path, output_path):
             print(f"✗ Ошибка проверки ffmpeg: {e}", flush=True)
     else:
         print("✗ Устройство GPU недоступно, пропускаем проверку кодека", flush=True)
-    
-    # QSV на i3-8100 может не поддерживать 4K (2160p) кодирование
-    # Используем программный кодек для разрешений выше 1920x1080
-    if use_qsv and video_height and video_height > 1080:
-        print(f"  Разрешение {video_width}x{video_height} - QSV может не поддерживать 4K, используем программный кодек", flush=True)
-        use_qsv = False
     
     # QSV на i3-8100 может не поддерживать 4K (2160p) кодирование
     # Используем программный кодек для разрешений выше 1920x1080
