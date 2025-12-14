@@ -246,13 +246,20 @@
             progressText.textContent = `${progress}%`;
             
             if (status.current_file) {
-                conversionFile.textContent = `Файл: ${status.current_file}`;
+                const methodText = status.method === 'qsv' ? ' (Quick Sync)' : status.method === 'software' ? ' (Программный)' : '';
+                conversionFile.textContent = `Файл: ${status.current_file}${methodText}`;
             } else {
                 conversionFile.textContent = '';
             }
             
             let infoText = '';
+            if (status.method === 'qsv') {
+                infoText += 'Метод: Quick Sync';
+            } else if (status.method === 'software') {
+                infoText += 'Метод: Программный';
+            }
             if (status.speed) {
+                if (infoText) infoText += ' • ';
                 infoText += `Скорость: ${status.speed.toFixed(1)}x`;
             }
             if (status.eta !== null && status.eta !== undefined) {
