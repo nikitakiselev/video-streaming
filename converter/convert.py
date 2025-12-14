@@ -235,6 +235,11 @@ def convert_video(input_path, output_path):
         
         process.wait()
         
+        # Читаем stderr для диагностики ошибок
+        stderr_output = process.stderr.read() if process.stderr else ""
+        if stderr_output and (process.returncode != 0 or 'error' in stderr_output.lower() or 'failed' in stderr_output.lower()):
+            print(f"FFmpeg stderr (ошибки): {stderr_output[:2000]}", flush=True)
+        
         if process.returncode == 0:
             print(f"Успешно: {output_path}", flush=True)
             update_status(
