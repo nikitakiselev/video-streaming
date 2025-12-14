@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр видео</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 100vh;
+        }
+        
+        .back-button {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .back-button:focus {
+            outline: 4px solid #3b82f6;
+            outline-offset: 4px;
+        }
+        
+        .back-button:focus-visible {
+            transform: scale(1.05);
+        }
+        
+        @media (min-width: 1920px) {
+            .container {
+                max-width: 1800px;
+            }
+        }
+        
+        @media (min-width: 3840px) {
+            .container {
+                max-width: 3600px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-4 md:py-8">
+        <button 
+            id="back-button" 
+            class="back-button mb-4 md:mb-6 px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm md:text-base lg:text-lg focus:outline-none"
+            tabindex="0"
+        >
+            ← Назад к списку
+        </button>
+        
+        <h1 id="video-title" class="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6"></h1>
+        
+        <div class="bg-black rounded-lg overflow-hidden">
+            <video 
+                id="video-player" 
+                controls 
+                preload="metadata"
+                class="w-full"
+            >
+                Ваш браузер не поддерживает воспроизведение видео.
+            </video>
+        </div>
+    </div>
+    
+    <script>
+        // Получить параметр video из URL
+        function getVideoParam() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('video');
+        }
+        
+        // Получить имя файла без расширения
+        function getFileNameWithoutExtension(filename) {
+            return filename.replace(/\.[^/.]+$/, '');
+        }
+        
+        // Инициализация плеера
+        function initPlayer() {
+            const videoParam = getVideoParam();
+            
+            if (!videoParam) {
+                document.getElementById('video-title').textContent = 'Видео не выбрано';
+                return;
+            }
+            
+            // Декодируем base64 обратно в имя файла
+            let decodedParam = videoParam;
+            try {
+                // Пробуем декодировать как base64
+                decodedParam = decodeURIComponent(escape(atob(videoParam)));
+            } catch (e) {
+                // Если не base64, используем как есть (для обратной совместимости)
+            }
+            
+            // Используем имя файла напрямую - Caddy должен правильно обработать
+            const videoUrl = `/videos/${decodedParam}`;
+            const videoTitle = getFileNameWithoutExtension(decodedParam);
+            
+            document.getElementById('video-title').textContent = videoTitle;
+            
+            const videoPlayer = document.getElementById('video-player');
+            videoPlayer.src = videoUrl;
+            
+            // Обработка ошибок
+            videoPlayer.addEventListener('error', (e) => {
+                console.error('Ошибка воспроизведения видео:', e);
+                console.error('URL:', videoUrl);
+                console.error('Параметр:', videoParam);
+                document.getElementById('video-title').textContent = 'Ошибка загрузки видео';
+            });
+        }
+        
+        // Обработчик кнопки "Назад"
+        document.getElementById('back-button').addEventListener('click', () => {
+            window.location.href = '/';
+        });
+        
+        document.getElementById('back-button').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                window.location.href = '/';
+            }
+        });
+        
+        // Инициализация
+        initPlayer();
+    </script>
+</body>
+</html>
+

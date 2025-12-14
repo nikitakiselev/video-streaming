@@ -1,0 +1,42 @@
+:80 {
+    # API прокси
+    handle /api/* {
+        reverse_proxy api:8181
+    }
+    
+    handle_path /videos/* {
+        root * /videos
+        file_server
+    }
+
+    # Статические файлы
+    handle {
+        root * /srv/public
+        file_server
+        header {
+            Accept-Ranges bytes
+        }
+    }
+    
+    # CORS заголовки
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+    }
+    
+    # Кэширование для статических ресурсов
+    @static {
+        file
+        path *.css *.js *.jpg *.png *.gif *.ico *.svg
+    }
+    header @static {
+        Cache-Control "public, max-age=31536000"
+    }
+    
+    # Логирование
+    log {
+        output stdout
+        format console
+    }
+}
+

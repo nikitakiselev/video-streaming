@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Видео библиотека</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Дополнительные стили для Smart TV */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .video-card {
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            height: auto;
+            min-height: fit-content;
+        }
+        
+        .video-card:focus {
+            outline: 4px solid #3b82f6;
+            outline-offset: 4px;
+        }
+        
+        .video-card:focus-visible {
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        
+        @media (min-width: 1920px) {
+            .container {
+                max-width: 1800px;
+            }
+        }
+        
+        @media (min-width: 3840px) {
+            .container {
+                max-width: 3600px;
+            }
+        }
+        
+        /* Стили для многострочных названий - полное отображение */
+        .video-card h3 {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            display: block;
+            max-width: 100%;
+            height: auto;
+            min-height: auto;
+        }
+        
+        /* Убираем все ограничения высоты для карточек */
+        .video-card {
+            overflow: visible !important;
+            max-height: none !important;
+        }
+        
+        /* Глобально убираем truncate для всех элементов в карточках видео */
+        .video-card * {
+            text-overflow: clip !important;
+            overflow: visible !important;
+            white-space: normal !important;
+        }
+        
+        /* Специально для заголовков в карточках - полное отображение в одну строку */
+        .video-card h3 {
+            text-overflow: clip !important;
+            overflow: visible !important;
+            white-space: normal !important;
+            display: block !important;
+            max-width: 100% !important;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 text-center">Видео библиотека</h1>
+        
+        <!-- Индикатор прогресса конвертации -->
+        <div id="conversion-status" class="mb-6 hidden">
+            <div class="bg-blue-900 border border-blue-700 rounded-lg p-4 md:p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-3">
+                        <svg class="animate-spin h-5 w-5 md:h-6 md:w-6 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="conversion-text" class="text-sm md:text-base lg:text-lg font-semibold">Конвертация...</span>
+                    </div>
+                    <span id="conversion-progress-text" class="text-sm md:text-base lg:text-lg font-bold">0%</span>
+                </div>
+                <div id="conversion-file" class="text-xs md:text-sm text-blue-300 mb-3 break-words whitespace-normal"></div>
+                <div class="w-full bg-blue-800 rounded-full h-2 md:h-3">
+                    <div id="conversion-progress-bar" class="bg-blue-400 h-2 md:h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div id="conversion-info" class="mt-2 text-xs md:text-sm text-blue-300"></div>
+            </div>
+        </div>
+        
+        <div id="video-list" class="space-y-2 md:space-y-3">
+            <!-- Видео элементы будут добавлены через JavaScript -->
+        </div>
+        
+        <div id="loading" class="text-center text-xl mt-8">
+            Загрузка...
+        </div>
+    </div>
+    
+    <script>
+        // Получить список видеофайлов
+        async function getVideoList() {
+            try {
+                const response = await fetch('/api/videos');
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки списка видео');
+                }
+                const videos = await response.json();
+                return videos;
+            } catch (error) {
+                console.error('Ошибка:', error);
+                return [];
+            }
+        }
+        
+        // Получить имя файла без расширения
+        function getFileNameWithoutExtension(filename) {
+            return filename.replace(/\.[^/.]+$/, '');
+        }
+        
+        // Создать элемент видео (одна строка)
+        function createVideoCard(video) {
+            // Поддержка как нового формата (объект), так и старого (строка)
+            const videoName = typeof video === 'string' ? video : video.name;
+            const fileName = getFileNameWithoutExtension(videoName);
+            const videoUrl = `/videos/${encodeURIComponent(videoName)}`;
+            
+            // Метаданные (если доступны)
+            const size = typeof video === 'object' ? video.size_formatted : '';
+            const date = typeof video === 'object' ? video.date_formatted : '';
+            const format = typeof video === 'object' ? video.format : 'MP4';
+            
+            const item = document.createElement('div');
+            item.className = 'video-card bg-gray-800 rounded-lg px-4 md:px-6 py-3 md:py-4 cursor-pointer focus:outline-none hover:bg-gray-700 transition-colors';
+            item.tabIndex = 0;
+            item.setAttribute('role', 'button');
+            item.setAttribute('aria-label', `Воспроизвести ${fileName}`);
+            
+            item.innerHTML = `
+                <div class="flex items-center gap-3 md:gap-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 md:w-8 md:h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-base md:text-lg lg:text-xl font-semibold break-words whitespace-normal mb-1" style="word-break: break-word; overflow-wrap: break-word; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; display: block;" title="${fileName}">${fileName}</h3>
+                        <div class="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-gray-400">
+                            ${format ? `<span class="px-2 py-1 bg-gray-700 rounded">${format}</span>` : ''}
+                            ${size ? `<span>${size}</span>` : ''}
+                            ${date ? `<span>${date}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Обработчик клика и Enter
+            const handleActivate = () => {
+                // Кодируем имя файла в base64 для обхода проблем с пробелами и спецсимволами
+                const encodedName = btoa(unescape(encodeURIComponent(videoName)));
+                window.location.href = `/watch.html?video=${encodedName}`;
+            };
+            
+            item.addEventListener('click', handleActivate);
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleActivate();
+                }
+            });
+            
+            return item;
+        }
+        
+        // Отобразить список видео
+        async function displayVideoList() {
+            const loading = document.getElementById('loading');
+            const videoList = document.getElementById('video-list');
+            
+            const videos = await getVideoList();
+            
+            if (videos.length === 0) {
+                loading.textContent = 'Видео не найдено';
+                return;
+            }
+            
+            loading.style.display = 'none';
+            
+            videos.forEach(video => {
+                const card = createVideoCard(video);
+                videoList.appendChild(card);
+            });
+        }
+        
+        // Получить статус конвертации
+        async function getConversionStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) {
+                    return null;
+                }
+                const status = await response.json();
+                return status;
+            } catch (error) {
+                console.error('Ошибка получения статуса:', error);
+                return null;
+            }
+        }
+        
+        // Обновить UI статуса конвертации
+        function updateConversionStatus(status) {
+            const statusDiv = document.getElementById('conversion-status');
+            const progressBar = document.getElementById('conversion-progress-bar');
+            const progressText = document.getElementById('conversion-progress-text');
+            const conversionText = document.getElementById('conversion-text');
+            const conversionFile = document.getElementById('conversion-file');
+            const conversionInfo = document.getElementById('conversion-info');
+            
+            if (!status || !status.active) {
+                statusDiv.classList.add('hidden');
+                return;
+            }
+            
+            statusDiv.classList.remove('hidden');
+            
+            const progress = status.progress || 0;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${progress}%`;
+            
+            if (status.current_file) {
+                conversionFile.textContent = `Файл: ${status.current_file}`;
+            } else {
+                conversionFile.textContent = '';
+            }
+            
+            let infoText = '';
+            if (status.speed) {
+                infoText += `Скорость: ${status.speed.toFixed(1)}x`;
+            }
+            if (status.eta !== null && status.eta !== undefined) {
+                const minutes = Math.floor(status.eta / 60);
+                const seconds = Math.floor(status.eta % 60);
+                if (infoText) infoText += ' • ';
+                infoText += `Осталось: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            conversionInfo.textContent = infoText;
+            
+            if (status.status === 'starting') {
+                conversionText.textContent = 'Подготовка к конвертации...';
+            } else if (status.status === 'converting') {
+                conversionText.textContent = 'Конвертация видео...';
+            } else if (status.status === 'completed') {
+                conversionText.textContent = 'Конвертация завершена';
+            } else if (status.status === 'error') {
+                conversionText.textContent = 'Ошибка конвертации';
+            } else {
+                conversionText.textContent = 'Конвертация...';
+            }
+        }
+        
+        // Периодическое обновление статуса
+        let statusInterval = null;
+        function startStatusPolling() {
+            if (statusInterval) return;
+            
+            // Обновляем сразу
+            getConversionStatus().then(status => {
+                if (status) updateConversionStatus(status);
+            });
+            
+            // Затем каждые 2 секунды
+            statusInterval = setInterval(async () => {
+                const status = await getConversionStatus();
+                if (status) {
+                    updateConversionStatus(status);
+                } else {
+                    const statusDiv = document.getElementById('conversion-status');
+                    statusDiv.classList.add('hidden');
+                }
+            }, 2000);
+        }
+        
+        // Инициализация
+        displayVideoList();
+        startStatusPolling();
+    </script>
+</body>
+</html>
+

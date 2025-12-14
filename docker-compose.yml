@@ -1,0 +1,34 @@
+services:
+  converter:
+    build:
+      context: ./converter
+      dockerfile: Dockerfile
+    volumes:
+      - ${INPUT_DIR:-./input}:/input:ro
+      - ${OUTPUT_DIR:-./output}:/output
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Moscow
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    volumes:
+      - ${OUTPUT_DIR:-./output}:/videos:ro
+    restart: unless-stopped
+    expose:
+      - "8181"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    volumes:
+      - ${OUTPUT_DIR:-./output}:/videos:ro
+    ports:
+      - "8180:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
