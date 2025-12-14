@@ -114,16 +114,50 @@ def convert_video(input_path, output_path):
     except:
         pass
     
-    # Проверяем доступность Quick Sync
+    # Проверяем доступность Quick Sync с подробным выводом
     use_qsv = False
+    print("=== Проверка Intel Quick Sync ===", flush=True)
+    
+    # Проверка 1: наличие устройства
     if os.path.exists('/dev/dri/renderD128'):
+        print("✓ Устройство /dev/dri/renderD128 найдено", flush=True)
+        device_ok = True
+    else:
+        print("✗ Устройство /dev/dri/renderD128 не найдено", flush=True)
+        device_ok = False
+        if os.path.exists('/dev/dri'):
+            dri_devices = [f for f in os.listdir('/dev/dri') if f.startswith('renderD')]
+            if dri_devices:
+                print(f"  Найдены другие устройства: {', '.join(dri_devices)}", flush=True)
+                device_ok = True
+            else:
+                print("  В /dev/dri нет устройств renderD*", flush=True)
+        else:
+            print("  Директория /dev/dri не существует", flush=True)
+    
+    # Проверка 2: поддержка QSV в ffmpeg
+    if device_ok:
         try:
             check_cmd = ['ffmpeg', '-hide_banner', '-encoders']
             result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=5)
             if 'h264_qsv' in result.stdout:
+                print("✓ Кодек h264_qsv доступен в ffmpeg", flush=True)
                 use_qsv = True
-        except:
-            pass
+            else:
+                print("✗ Кодек h264_qsv НЕ найден в ffmpeg", flush=True)
+                print("  Возможные причины:", flush=True)
+                print("  - Образ ffmpeg не собран с поддержкой QSV", flush=True)
+                print("  - Не установлены библиотеки Intel Media SDK", flush=True)
+        except Exception as e:
+            print(f"✗ Ошибка проверки ffmpeg: {e}", flush=True)
+    else:
+        print("✗ Устройство GPU недоступно, пропускаем проверку кодека", flush=True)
+    
+    if use_qsv:
+        print(">>> Quick Sync будет использоваться <<<", flush=True)
+    else:
+        print(">>> Quick Sync НЕ будет использоваться, используется программный кодек <<<", flush=True)
+    print("===================================", flush=True)
     
     # Параметры конвертации
     if use_qsv:
