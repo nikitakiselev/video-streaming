@@ -162,11 +162,11 @@ def convert_video(input_path, output_path):
     # Параметры конвертации
     if use_qsv:
         update_status(method="qsv")
+        # Для QSV нужно декодировать программно и конвертировать формат пикселей
         cmd = [
             'ffmpeg',
-            '-hwaccel', 'qsv',
-            '-hwaccel_device', '/dev/dri/renderD128',
             '-i', input_path,
+            '-vf', 'format=nv12,hwupload=extra_hw_frames=64',  # Конвертируем в nv12 и загружаем в GPU
             '-c:v', 'h264_qsv',
             '-preset', 'medium',
             '-global_quality', '23',
@@ -174,7 +174,6 @@ def convert_video(input_path, output_path):
             '-c:a', 'aac',
             '-b:a', '192k',
             '-movflags', '+faststart',
-            '-pix_fmt', 'nv12',
             '-profile:v', 'high',
             '-level', '4.0',
             '-y',
