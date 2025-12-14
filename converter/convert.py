@@ -165,7 +165,7 @@ def convert_video(input_path, output_path):
         cmd = [
             'ffmpeg',
             '-hwaccel', 'qsv',
-            '-hwaccel_output_format', 'qsv',
+            '-hwaccel_device', '/dev/dri/renderD128',
             '-i', input_path,
             '-c:v', 'h264_qsv',
             '-preset', 'medium',
@@ -179,7 +179,7 @@ def convert_video(input_path, output_path):
             '-level', '4.0',
             '-y',
             '-progress', 'pipe:1',
-            '-loglevel', 'error',
+            '-loglevel', 'warning',  # Изменено на warning для диагностики
             output_path
         ]
     else:
