@@ -112,24 +112,53 @@ def convert_video(input_path, output_path):
     except:
         pass
     
-    # Параметры конвертации для максимальной совместимости
-    cmd = [
-        'ffmpeg',
-        '-i', input_path,
-        '-c:v', 'libx264',           # Видеокодек H.264
-        '-preset', 'medium',          # Баланс скорости/качества
-        '-crf', '23',                 # Качество (18-28, меньше = лучше)
-        '-c:a', 'aac',                # Аудиокодек AAC
-        '-b:a', '192k',               # Битрейт аудио
-        '-movflags', '+faststart',    # Быстрый старт для веб-плееров
-        '-pix_fmt', 'yuv420p',        # Совместимость с браузерами
-        '-profile:v', 'high',         # Профиль H.264
-        '-level', '4.0',              # Уровень H.264
-        '-y',                         # Перезаписать выходной файл
-        '-progress', 'pipe:1',        # Вывод прогресса в stdout
-        '-loglevel', 'error',         # Минимальный вывод логов
-        output_path
-    ]
+    # Параметры конвертации с использованием Intel Quick Sync (QSV)
+    # Проверяем доступность Quick Sync
+    use_qsv = os.path.exists('/dev/dri/renderD128')
+    
+    if use_qsv:
+        # Используем аппаратное ускорение Quick Sync
+        cmd = [
+            'ffmpeg',
+            '-hwaccel', 'qsv',            # Используем Quick Sync для декодирования
+            '-hwaccel_output_format', 'qsv',
+            '-i', input_path,
+            '-c:v', 'h264_qsv',          # Видеокодек H.264 через Quick Sync
+            '-preset', 'medium',          # Баланс скорости/качества
+            '-global_quality', '23',      # Качество для QSV (аналог CRF, 18-28)
+            '-look_ahead', '1',            # Включить look-ahead для лучшего качества
+            '-c:a', 'aac',                # Аудиокодек AAC
+            '-b:a', '192k',               # Битрейт аудио
+            '-movflags', '+faststart',    # Быстрый старт для веб-плееров
+            '-pix_fmt', 'nv12',           # Формат пикселей для QSV
+            '-profile:v', 'high',         # Профиль H.264
+            '-level', '4.0',              # Уровень H.264
+            '-y',                         # Перезаписать выходной файл
+            '-progress', 'pipe:1',        # Вывод прогресса в stdout
+            '-loglevel', 'error',         # Минимальный вывод логов
+            output_path
+        ]
+        print("Используется Intel Quick Sync (QSV)", flush=True)
+    else:
+        # Fallback на программный кодек
+        cmd = [
+            'ffmpeg',
+            '-i', input_path,
+            '-c:v', 'libx264',           # Видеокодек H.264 (программный)
+            '-preset', 'medium',          # Баланс скорости/качества
+            '-crf', '23',                 # Качество (18-28, меньше = лучше)
+            '-c:a', 'aac',                # Аудиокодек AAC
+            '-b:a', '192k',               # Битрейт аудио
+            '-movflags', '+faststart',    # Быстрый старт для веб-плееров
+            '-pix_fmt', 'yuv420p',        # Совместимость с браузерами
+            '-profile:v', 'high',         # Профиль H.264
+            '-level', '4.0',              # Уровень H.264
+            '-y',                         # Перезаписать выходной файл
+            '-progress', 'pipe:1',        # Вывод прогресса в stdout
+            '-loglevel', 'error',         # Минимальный вывод логов
+            output_path
+        ]
+        print("Используется программный кодек (Quick Sync недоступен)", flush=True)
     
     try:
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 

@@ -6,6 +6,10 @@ services:
     volumes:
       - ${INPUT_DIR:-./input}:/input:ro
       - ${OUTPUT_DIR:-./output}:/output
+      # Монтируем целевую директорию symlink-ов для доступа к файлам
+      - /mnt/hdd0/home/user/media:/mnt/hdd0/home/user/media:ro
+    devices:
+      - /dev/dri:/dev/dri  # Доступ к Intel Quick Sync
     restart: unless-stopped
     environment:
       - TZ=Europe/Moscow
@@ -16,6 +20,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ${OUTPUT_DIR:-./output}:/videos:ro
+      - /mnt/hdd0/home/user/media:/mnt/hdd0/home/user/media:ro
     restart: unless-stopped
     expose:
       - "8181"
@@ -26,6 +31,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ${OUTPUT_DIR:-./output}:/videos:ro
+      - /mnt/hdd0/home/user/media:/mnt/hdd0/home/user/media:ro
     ports:
       - "8180:80"
     depends_on:
