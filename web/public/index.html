@@ -83,7 +83,15 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 text-center">Видео библиотека</h1>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-center">Видео библиотека</h1>
+            <a href="/num.apk" download="num.apk" class="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Скачать NUM
+            </a>
+        </div>
         
         <!-- Индикатор прогресса конвертации -->
         <div id="conversion-status" class="mb-6 hidden">
