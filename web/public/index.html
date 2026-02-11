@@ -79,6 +79,45 @@
             max-width: 100% !important;
             line-height: 1.5;
         }
+        
+        /* Шуточный рекламный баннер */
+        .ad-banner {
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            z-index: 50;
+            max-width: 380px;
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+            border: 3px solid #f59e0b;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            font-family: inherit;
+        }
+        .ad-banner .ad-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin-bottom: 0.35rem;
+        }
+        .ad-banner .ad-text {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #fbbf24;
+            line-height: 1.35;
+        }
+        .ad-banner .ad-text .city {
+            color: #f59e0b;
+        }
+        .ad-banner-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        .ad-banner-link:hover {
+            text-decoration: none;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
@@ -122,6 +161,14 @@
             Загрузка...
         </div>
     </div>
+    
+    <!-- Шуточный рекламный баннер -->
+    <aside class="ad-banner" aria-label="Реклама">
+        <a href="https://upimec.su/" target="_blank" rel="noopener noreferrer" class="ad-banner-link">
+            <div class="ad-label">Реклама</div>
+            <div class="ad-text">Ремонт телевизоров в <span class="city">Новопавловске</span>. Упимец</div>
+        </a>
+    </aside>
     
     <script>
         // Получить список видеофайлов
