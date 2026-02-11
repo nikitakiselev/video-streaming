@@ -80,8 +80,8 @@
             line-height: 1.5;
         }
         
-        /* Шуточный рекламный баннер */
-        .ad-banner {
+        /* Партнёрский блок (нейтральные имена — чтобы не скрывали блокировщики) */
+        .partner-block {
             position: fixed;
             bottom: 1.25rem;
             right: 1.25rem;
@@ -94,28 +94,28 @@
             box-shadow: 0 4px 24px rgba(0,0,0,0.5);
             font-family: inherit;
         }
-        .ad-banner .ad-label {
+        .partner-block .partner-caption {
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #94a3b8;
             margin-bottom: 0.35rem;
         }
-        .ad-banner .ad-text {
+        .partner-block .partner-title {
             font-size: 1.15rem;
             font-weight: 600;
             color: #fbbf24;
             line-height: 1.35;
         }
-        .ad-banner .ad-text .city {
+        .partner-block .partner-title .city {
             color: #f59e0b;
         }
-        .ad-banner-link {
+        .partner-block .partner-link {
             display: block;
             text-decoration: none;
             color: inherit;
         }
-        .ad-banner-link:hover {
+        .partner-block .partner-link:hover {
             text-decoration: none;
         }
     </style>
@@ -162,11 +162,11 @@
         </div>
     </div>
     
-    <!-- Шуточный рекламный баннер -->
-    <aside class="ad-banner" aria-label="Реклама">
-        <a href="https://upimec.su/" target="_blank" rel="noopener noreferrer" class="ad-banner-link">
-            <div class="ad-label">Реклама</div>
-            <div class="ad-text">Ремонт телевизоров в <span class="city">Новопавловске</span>. Упимец</div>
+    <!-- Партнёрский блок (подпись «Реклама» через пробелы, чтобы не резали блокировщики) -->
+    <aside class="partner-block" aria-label="Партнёр">
+        <a href="https://upimec.su/" target="_blank" rel="noopener noreferrer" class="partner-link">
+            <div class="partner-caption">Р&#1077;&#1082;&#1083;&#1072;&#1084;&#1072;</div>
+            <div class="partner-title">Ремонт телевизоров в <span class="city">Новопавловске</span>. Упимец</div>
         </a>
     </aside>
     
